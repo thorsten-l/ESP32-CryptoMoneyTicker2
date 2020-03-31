@@ -4,20 +4,17 @@
 #include <WiFi.h>
 
 CryptoData cryptoData;
-DynamicJsonDocument coinDataDocument(4096);
 
-DeserializationError CryptoData::readJSON( int retries )
+static StaticJsonDocument<4096> coinDataDocument;
+static WiFiClientSecure clientSecure;
+static HTTPClient https;
+static DeserializationError error;
+
+DeserializationError CryptoData::readJSON( int retries, String currency )
 {
-  HTTPClient http;
-  DeserializationError err = DeserializationError::IncompleteInput;
+  error = DeserializationError::IncompleteInput;
 
-  WiFiClientSecure *client = new WiFiClientSecure;
-
-  if(client) 
-  {
-    HTTPClient https;
-
-    if (https.begin(*client, "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC,XMR,ETH&convert=EUR")) {  // HTTPS
+    if (https.begin(clientSecure, "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC,XMR,ETH&convert=" + currency )) {
 
       Serial.print("[HTTPS] GET...\n");
 
@@ -33,10 +30,10 @@ DeserializationError CryptoData::readJSON( int retries )
         Serial.printf("[HTTPS] GET... code: %d\n", httpCode);
   
         if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
-            err = deserializeJson(coinDataDocument, https.getString());
-            Serial.printf("[JSON] %s\n", err.c_str());
+            error = deserializeJson(coinDataDocument, https.getString());
+            Serial.printf("[JSON] %s\n", error.c_str());
 
-          if ( err == DeserializationError::Ok )
+          if ( error == DeserializationError::Ok )
           {
             serializeJsonPretty( coinDataDocument, Serial );
             Serial.println();
@@ -56,52 +53,49 @@ DeserializationError CryptoData::readJSON( int retries )
     {
       Serial.printf("[HTTPS] Unable to connect\n");
     }
-  }
 
-  if (err != DeserializationError::Ok && retries >= 1)
+  if (error != DeserializationError::Ok && retries >= 1)
   {
-    Serial.printf("ERROR: Parsing weather data. (%s, retries=%d)\n", err.c_str(), retries--);
+    Serial.printf("ERROR: Parsing weather data. (%s, retries=%d)\n", error.c_str(), retries--);
     delay(5000);
-    err = readJSON( retries );
+    error = readJSON( retries, currency );
   }
 
-  return err;
+  return error;
 }
 
 
-DeserializationError CryptoData::getCryptoData()
+DeserializationError CryptoData::getCryptoData( String currency )
 {
-  Serial.println("CryptoData::getCryptoData");
   DeserializationError err = readJSON(
-      NUMBER_OF_RETRIES );
+      NUMBER_OF_RETRIES, currency );
   return err;
 }
 
 
-bool CryptoData::update()
+bool CryptoData::update(String currency)
 {
   bool updateError = false;
 
-  DeserializationError err = getCryptoData();
+  DeserializationError err = getCryptoData(currency);
 
   if (err != DeserializationError::Ok)
   {
-    Serial.print("ERROR: Reading current weather data: ");
+    Serial.print("ERROR: Reading current crypto data: ");
     Serial.println(err.c_str());
     updateError = true;
   }
-
   return updateError;
 }
 
-void CryptoData::get( struct _crypto_info *info, String symbol )
+void CryptoData::get( struct _crypto_info *info, String symbol, String currency )
 {
   JsonObject obj = coinDataDocument.as<JsonObject>();
   info->id = obj["data"][symbol]["id"].as<int>();
-  info->price = obj["data"][symbol]["quote"]["EUR"]["price"].as<double>();
-  info->percent_change_1h = obj["data"][symbol]["quote"]["EUR"]["percent_change_1h"].as<double>();
+  info->price = obj["data"][symbol]["quote"][currency]["price"].as<double>();
+  info->percent_change_1h = obj["data"][symbol]["quote"][currency]["percent_change_1h"].as<double>();
   strcpy( info->name, obj["data"][symbol]["name"].as<String>().c_str());
   strcpy( info->symbol, symbol.c_str());
-  strcpy( info->last_updated, obj["data"][symbol]["quote"]["EUR"]["last_updated"].as<String>().c_str());
+  strcpy( info->last_updated, obj["data"][symbol]["quote"][currency]["last_updated"].as<String>().c_str());
 }
 

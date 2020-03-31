@@ -6,6 +6,8 @@ extern Adafruit_ILI9341 tft;
 extern int coinIndex;
 extern double oldPrice[5];
 
+char timeBuffer[32];
+
 void printName(String name, String symbol) 
 {
   tft.setTextColor(ILI9341_WHITE);
@@ -18,7 +20,7 @@ void printName(String name, String symbol)
   tft.drawLine(65, 54, 240, 54, ILI9341_WHITE);
 }
 
-void printPrice( double price, bool show_eur ) 
+void printPrice( double price, String currency ) 
 {
   tft.setTextColor(ILI9341_WHITE);
   tft.setTextSize(2);
@@ -39,16 +41,10 @@ void printPrice( double price, bool show_eur )
 
   tft.setTextSize(3);
   tft.setCursor(16, 72+24);
-  if (show_eur == false) {
-    tft.print("$");
-  }
-
+  
   tft.printf("%0.3f", price );
-
-  if (show_eur == true) {
-    tft.setTextSize(2);
-    tft.print("Euro");
-  }
+  tft.setTextSize(2);
+  tft.print(currency);
 
   tft.println();
 }
@@ -67,8 +63,6 @@ void printChange(double percent_change_1h)
 
 void printTime(char *last_updated) 
 {
-  char timeBuffer[32];
-
   strcpy( timeBuffer, last_updated);
   timeBuffer[10] = ' ';
   timeBuffer[19] = 0;
@@ -92,7 +86,6 @@ void printPagination() {
 }
 
 void printError(String error) {
-
   tft.setTextColor(ILI9341_WHITE);
   tft.setTextSize(2);
   tft.setCursor(65, 22);

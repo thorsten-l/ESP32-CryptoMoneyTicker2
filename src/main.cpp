@@ -13,22 +13,32 @@
 
 #include <CryptoData.hpp>
 #include <PrintUtils.h>
+#include <Button.hpp>
 
 byte mac[6];
 struct tm timeinfo;
-
-#define NUMBER_OF_COINS 3
+struct _crypto_info info;
 
 int coinIndex = 0;
+#define NUMBER_OF_COINS 3
 String coinSymbols[] = { "XMR", "BTC", "ETH" };
 const unsigned char* coinIcons[] = { monero, bitcoin, ethereum };
 int coinColors[] = { ILI9341_ORANGE, ILI9341_YELLOW, ILI9341_WHITE };
 double oldPrice[NUMBER_OF_COINS];
 
-time_t progressTimestamp;
-
 Adafruit_ILI9341 tft =
     Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_RST, TFT_MISO);
+
+
+static int currencyIndex = 0;
+#define NUMBER_OF_CURRENCIES 4
+static String convertToCurrency[] = { "EUR", "USD", "CHF", "GBP" };
+static time_t progressTimestamp;
+static bool doUpdateCryptoData = true;
+
+static Button buttonL(BUTTON_L);
+static Button buttonM(BUTTON_M);
+static Button buttonR(BUTTON_R);
 
 void connectWiFi()
 {
@@ -89,7 +99,7 @@ void storeOldPrice()
   struct _crypto_info info;
   for( int i=0; i<NUMBER_OF_COINS; i++ )
   {
-    cryptoData.get( &info, coinSymbols[i] );
+    cryptoData.get( &info, coinSymbols[i], convertToCurrency[currencyIndex] );
     Serial.printf( "storing old price for %s = %0.3f\n", coinSymbols[i].c_str(), info.price );
     oldPrice[i] = info.price;
   }
@@ -134,24 +144,59 @@ void setup()
 
   InitializeOTA();
   progressTimestamp = 0;
-  cryptoData.update();
+  cryptoData.update(convertToCurrency[currencyIndex]);
   storeOldPrice();
 }
 
-
-
-static bool doUpdateCryptoData = true;
+time_t lastButtonPressedTimestamp = 0;
 
 void loop()
 {
   time_t currentMillis = millis();
   getLocalTime( &timeinfo );
 
+  if ( currentMillis - lastButtonPressedTimestamp >= 333 )
+  {
+    if ( buttonL.isPressed() )
+    {
+      Serial.println( "left button is pressed" );
+      lastButtonPressedTimestamp = currentMillis;
+      coinIndex = ( coinIndex + (NUMBER_OF_COINS-2)) % NUMBER_OF_COINS;
+      progressTimestamp = currentMillis - 15000;
+    }
+  
+    if ( buttonM.isPressed() )
+    {
+      progressTimestamp = currentMillis - 10000;
+      Serial.println( "middle button is pressed" );
+      printTransition();
+      tft.setTextColor(ILI9341_WHITE);
+      tft.setTextSize(3);
+      tft.setCursor(0,0);
+      tft.println( "\n  Changing");
+      tft.println( "  Currency");
+      tft.print( "  to ");
+      currencyIndex = ( currencyIndex + 1 ) % NUMBER_OF_CURRENCIES;
+      tft.println( convertToCurrency[currencyIndex]);
+      cryptoData.update(convertToCurrency[currencyIndex]);
+      storeOldPrice();
+      lastButtonPressedTimestamp = currentMillis;
+      coinIndex = ( coinIndex - 1 ) % NUMBER_OF_COINS;
+    }
+  
+    if ( buttonR.isPressed() )
+    {
+      Serial.println( "right button is pressed" );
+      lastButtonPressedTimestamp = currentMillis;
+      progressTimestamp = currentMillis - 15000;
+    }
+  }
+
   if ( doUpdateCryptoData && ( timeinfo.tm_min % 5 ) == 0 )
   {
     Serial.println(&timeinfo, PSTR("Time set            : %A %d %B %Y %H:%M:%S"));
     storeOldPrice();
-    cryptoData.update();
+    cryptoData.update(convertToCurrency[currencyIndex]);
     doUpdateCryptoData = false;
   }
 
@@ -162,15 +207,13 @@ void loop()
 
   if(( currentMillis - progressTimestamp ) >= 15000 )
   {
-    struct _crypto_info info;
-
-    Serial.printf( "Showing %s\n", coinSymbols[coinIndex].c_str() );
-    cryptoData.get( &info, coinSymbols[coinIndex] );
+    Serial.printf( "Showing %s (free heap: %d)\n", coinSymbols[coinIndex].c_str(), ESP.getFreeHeap());
+    cryptoData.get( &info, coinSymbols[coinIndex], convertToCurrency[currencyIndex] );
 
     printTransition();
     tft.drawBitmap(5, 5, coinIcons[coinIndex], 45, 45, coinColors[coinIndex] );
     printName(info.name, info.symbol );
-    printPrice( info.price, true );
+    printPrice( info.price, convertToCurrency[currencyIndex] );
     printChange(info.percent_change_1h);
     printTime(info.last_updated);
     printPagination();

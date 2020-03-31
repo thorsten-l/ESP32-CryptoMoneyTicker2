@@ -24,13 +24,13 @@ struct _crypto_info
 class CryptoData
 {
 private:
-  DeserializationError readJSON( int retries );
-  DeserializationError getCryptoData();
-  void get( struct _crypto_info *info, JsonObject &obj );
+  DeserializationError readJSON( int retries, String currency);
+  DeserializationError getCryptoData(String currency);
+  void get( struct _crypto_info *info, JsonObject &obj, String currency );
 
 public:
-  bool update();
-  void get( struct _crypto_info *info, String symbol ); // weather forecast
+  bool update(String currency);
+  void get( struct _crypto_info *info, String symbol, String currency);
 };
 
 extern CryptoData cryptoData;

@@ -4,7 +4,7 @@
 #include <Arduino.h>
 
 void printName(String name, String symbol);
-void printPrice(double price, bool show_eur);
+void printPrice(double price, String currency );
 void printChange(double percent_change_1h);
 void printTime(char *last_updated);
 void printPagination();
