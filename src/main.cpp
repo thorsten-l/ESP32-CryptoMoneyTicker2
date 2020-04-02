@@ -20,10 +20,10 @@ struct tm timeinfo;
 struct _crypto_info info;
 
 int coinIndex = 0;
-#define NUMBER_OF_COINS 3
-String coinSymbols[] = { "XMR", "BTC", "ETH" };
-const unsigned char* coinIcons[] = { monero, bitcoin, ethereum };
-int coinColors[] = { ILI9341_ORANGE, ILI9341_YELLOW, ILI9341_WHITE };
+#define NUMBER_OF_COINS 5
+String coinSymbols[] = { "BTC", "ETH", "LTC", "XMR", "XRP" };
+const unsigned char* coinIcons[] = { bitcoin, ethereum, litecoin, monero, ripple };
+int coinColors[] = { ILI9341_YELLOW, ILI9341_WHITE, ILI9341_LIGHTGREY, ILI9341_ORANGE, ILI9341_NAVY };
 double oldPrice[NUMBER_OF_COINS];
 
 Adafruit_ILI9341 tft =
@@ -220,7 +220,7 @@ void loop()
 
     /*printError(error);*/
     
-    tft.fillCircle(108 + (coinIndex*10), 300, 4, ILI9341_WHITE);
+    tft.fillCircle(98 + (coinIndex*10), 300, 4, ILI9341_WHITE);
 
     coinIndex = ( coinIndex + 1 ) % NUMBER_OF_COINS;
     progressTimestamp = currentMillis;

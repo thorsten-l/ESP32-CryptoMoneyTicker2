@@ -14,7 +14,7 @@ DeserializationError CryptoData::readJSON( int retries, String currency )
 {
   error = DeserializationError::IncompleteInput;
 
-    if (https.begin(clientSecure, "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC,XMR,ETH&convert=" + currency )) {
+    if (https.begin(clientSecure, "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol=BTC,XMR,ETH,LTC,XRP&convert=" + currency )) {
 
       Serial.print("[HTTPS] GET...\n");
 

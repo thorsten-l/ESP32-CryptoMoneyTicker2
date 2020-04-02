@@ -78,11 +78,11 @@ void printTime(char *last_updated)
 }
 
 void printPagination() {
-  // tft.drawCircle(98, 300, 4, ILI9341_WHITE);
+  tft.drawCircle(98, 300, 4, ILI9341_WHITE);
   tft.drawCircle(108, 300, 4, ILI9341_WHITE);
   tft.drawCircle(118, 300, 4, ILI9341_WHITE);
   tft.drawCircle(128, 300, 4, ILI9341_WHITE);
-  // tft.drawCircle(138, 300, 4, ILI9341_WHITE);
+  tft.drawCircle(138, 300, 4, ILI9341_WHITE);
 }
 
 void printError(String error) {
